@@ -28,13 +28,63 @@ public class ApplicationConfig implements ApplicationListener<ApplicationEnviron
         ConfigurableEnvironment env = event.getEnvironment();
         String dbUrl = env.getProperty("spring.datasource.url");
         
-        // Normaliser l'URL si elle ne commence pas par "jdbc:"
-        // Render fournit parfois des URLs au format "postgresql://..." sans le préfixe "jdbc:"
+        // Normaliser l'URL PostgreSQL pour Render
+        // Render fournit: postgresql://user:password@host/database
+        // JDBC attend: jdbc:postgresql://host:port/database (avec credentials séparés)
         if (dbUrl != null && !dbUrl.startsWith("jdbc:")) {
-            String normalizedUrl = "jdbc:" + dbUrl;
+            String normalizedUrl = normalizePostgresUrl(dbUrl);
             java.util.Map<String, Object> source = new java.util.HashMap<>();
             source.put("spring.datasource.url", normalizedUrl);
             env.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", source));
+        }
+    }
+    
+    /**
+     * Normalise une URL PostgreSQL au format Render vers le format JDBC
+     * Input: postgresql://user:password@host/database
+     * Output: jdbc:postgresql://host:port/database
+     * Les credentials sont gérés séparément via DB_USERNAME et DB_PASSWORD
+     */
+    private String normalizePostgresUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        
+        // Si déjà au format JDBC, retourner tel quel
+        if (url.startsWith("jdbc:")) {
+            return url;
+        }
+        
+        try {
+            // Parser l'URL au format URI: postgresql://user:password@host:port/database
+            java.net.URI uri = new java.net.URI(url);
+            
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String path = uri.getPath();
+            
+            // Si le path commence par "/", l'enlever
+            if (path != null && path.startsWith("/")) {
+                path = path.substring(1);
+            }
+            
+            // Construire l'URL JDBC sans les credentials (ils sont dans DB_USERNAME/DB_PASSWORD)
+            StringBuilder jdbcUrl = new StringBuilder("jdbc:postgresql://");
+            jdbcUrl.append(host != null ? host : "");
+            
+            // Ajouter le port si spécifié, sinon utiliser le port par défaut PostgreSQL (5432)
+            if (port > 0) {
+                jdbcUrl.append(":").append(port);
+            }
+            
+            if (path != null && !path.isEmpty()) {
+                jdbcUrl.append("/").append(path);
+            }
+            
+            return jdbcUrl.toString();
+        } catch (Exception e) {
+            // En cas d'erreur de parsing, essayer simplement d'ajouter "jdbc:" devant
+            return "jdbc:" + url;
         }
     }
     @Bean
