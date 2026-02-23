@@ -19,7 +19,7 @@ Ce guide vous explique comment déployer l'application Article Manager API sur R
 3. Configurez :
    - **Name** : `article-manager-db`
    - **Database** : `article_manager`
-   - **User** : `article_manager_user` (ou laissez par défaut)
+   - **User** : `   ` (ou laissez par défaut)
    - **Region** : Choisissez la région la plus proche
    - **Plan** : `Free` (pour commencer)
 4. Cliquez sur **"Create Database"**
@@ -35,9 +35,8 @@ Ce guide vous explique comment déployer l'application Article Manager API sur R
    - **Region** : Même région que la base de données
    - **Branch** : `main`
    - **Root Directory** : `backend` (si le code est dans un sous-dossier)
-   - **Environment** : `Java`
-   - **Build Command** : `mvn clean package -DskipTests`
-   - **Start Command** : `java -jar target/*.jar`
+   - **Environment** : `Docker` (ou utilisez `render.yaml` qui configure Docker automatiquement)
+   - **Dockerfile Path** : `./Dockerfile` (si non détecté automatiquement)
    - **Plan** : `Free` (pour commencer)
 
 #### 3. Configurer les Variables d'Environnement
@@ -46,23 +45,27 @@ Dans la section **"Environment"** du service web, ajoutez :
 
 ```bash
 SPRING_PROFILES_ACTIVE=production
-DB_URL=jdbc:postgresql://[HOST]:[PORT]/article_manager
-DB_USERNAME=[VOTRE_UTILISATEUR]
-DB_PASSWORD=[VOTRE_MOT_DE_PASSE]
+DB_URL=postgresql://article_manager_user:PEutSBPSr7YZXHzOdtAbO7zaZ1ESxHG6@dpg-d6ecl3pr0fns73c97j5g-a/article_manager
+DB_USERNAME=article_manager_user
+DB_PASSWORD=PEutSBPSr7YZXHzOdtAbO7zaZ1ESxHG6
 JWT_SECRET=U73dsIlmL5e6wfYslsop3TsVLPGxYeE9sDOjxxGXTOo=
 JWT_EXPIRATION=86400000
-PORT=10000
+PORT=8080
 ```
 
-**Note** : Remplacez `[HOST]`, `[PORT]`, `[VOTRE_UTILISATEUR]` et `[VOTRE_MOT_DE_PASSE]` par les valeurs de votre base de données PostgreSQL Render.
+**⚠️ IMPORTANT** :
+- **DB_URL** : Utilisez l'**URL INTERNE** depuis l'onglet "Connect" → "Internal" de votre base de données
+- Format Render : `postgresql://user:password@host/database`
+- **Ne modifiez PAS l'URL** ! L'`EnvironmentPostProcessor` la normalisera automatiquement en `jdbc:postgresql://host:5432/database`
+- Les credentials (`DB_USERNAME` et `DB_PASSWORD`) sont extraits automatiquement de l'URL, mais vous pouvez aussi les définir explicitement
 
 #### 4. Initialiser la Base de Données
 
-1. Connectez-vous à votre base de données MySQL via un client (MySQL Workbench, DBeaver, etc.)
-2. Exécutez le script `src/main/resources/db/migration/schema.sql`
-3. Exécutez le script `src/main/resources/db/migration/seed.sql`
+1. Connectez-vous à votre base de données PostgreSQL via un client (DBeaver, pgAdmin, etc.) ou via le terminal Render
+2. Exécutez le script `src/main/resources/db/migration/schema.sql` pour créer les tables
+3. Exécutez le script `src/main/resources/db/migration/seed.sql` pour insérer les données de test
 
-**Alternative** : Utilisez le terminal Render pour exécuter les scripts SQL.
+**Alternative** : Utilisez le terminal Render (onglet "Shell" de votre base de données) pour exécuter les scripts SQL avec `psql`.
 
 ### Option 2 : Déploiement via render.yaml (Automatique)
 
@@ -81,7 +84,7 @@ Si vous avez un fichier `render.yaml` dans votre repository :
 | Variable | Description | Exemple |
 |----------|-------------|---------|
 | `SPRING_PROFILES_ACTIVE` | Profil Spring à utiliser | `production` |
-| `DB_URL` | URL de connexion PostgreSQL | `jdbc:postgresql://...` |
+| `DB_URL` | URL de connexion PostgreSQL (format Render) | `postgresql://user:pass@host/db` |
 | `DB_USERNAME` | Nom d'utilisateur PostgreSQL | `article_manager_user` |
 | `DB_PASSWORD` | Mot de passe PostgreSQL | `votre_mot_de_passe` |
 | `JWT_SECRET` | Clé secrète JWT (Base64) | `U73dsIlmL5e6wfY...` |
@@ -132,9 +135,11 @@ curl https://article-manager-api.onrender.com/api-docs
 
 ### Problème : Erreur de connexion à la base de données
 
-1. Vérifiez que `DB_URL` utilise l'URL interne de Render
-2. Vérifiez que `DB_USERNAME` et `DB_PASSWORD` sont corrects
-3. Vérifiez que la base de données est bien créée
+1. Vérifiez que `DB_URL` utilise l'**URL INTERNE** (onglet "Connect" → "Internal" de votre base de données)
+2. Format attendu : `postgresql://user:password@host/database` (l'`EnvironmentPostProcessor` le normalise automatiquement)
+3. Vérifiez que `DB_USERNAME` et `DB_PASSWORD` correspondent aux credentials de l'URL
+4. Vérifiez que la base de données est bien créée et accessible
+5. Vérifiez que le service web et la base de données sont dans la même région
 
 ### Problème : Port déjà utilisé
 
