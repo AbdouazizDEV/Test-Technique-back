@@ -277,4 +277,4 @@ mvn test
 
 ## 📄 Licence
 
-Ce projet est un projet de démonstration technique.
+Ce projet est un projet de démonstration technique.Mon premier projet Spring Boot, je suis fiére de moi 'Maa ko fa am', je suis chaud pour en faire d'autres qui seront beaucoup plus serieux. 

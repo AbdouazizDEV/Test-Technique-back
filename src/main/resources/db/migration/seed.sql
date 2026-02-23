@@ -17,4 +17,6 @@ INSERT INTO users (name, email, password, role) VALUES
 INSERT INTO articles (title, content, author_id) VALUES
 ('Introduction au Clean Code', 'Le Clean Code est une philosophie...', 2),
 ('Les principes SOLID', 'SOLID est un acronyme représentant...', 2),
-('Architecture Hexagonale', 'L hexagonale permet de découpler...', 3);
+('Architecture Hexagonale', 'L hexagonale permet de découpler...', 3),
+('Le refactoring', 'Le refactoring est une technique...', 3),
+('Le design pattern', 'Le design pattern est une technique...', 2);

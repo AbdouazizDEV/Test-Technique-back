@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: article-manager-api
+    env: java
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/*.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        value: 86400000
+      - key: SERVER_PORT
+        value: 10000
+    healthCheckPath: /api-docs
+    plan: starter
+
+databases:
+  - name: article-manager-db
+    databaseName: article_manager
+    user: gs1user
+    plan: starter
