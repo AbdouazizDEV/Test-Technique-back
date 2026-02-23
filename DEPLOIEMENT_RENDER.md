@@ -12,19 +12,18 @@ Ce guide vous explique comment déployer l'application Article Manager API sur R
 
 ### Option 1 : Déploiement via Render Dashboard (Recommandé)
 
-#### 1. Créer une Base de Données MySQL
+#### 1. Créer une Base de Données PostgreSQL
 
 1. Connectez-vous à [Render Dashboard](https://dashboard.render.com)
-2. Cliquez sur **"New +"** → **"PostgreSQL"** ou **"MySQL"**
-3. Sélectionnez **"MySQL"**
-4. Configurez :
+2. Cliquez sur **"New +"** → **"Postgres"**
+3. Configurez :
    - **Name** : `article-manager-db`
    - **Database** : `article_manager`
-   - **User** : `gs1user`
+   - **User** : `article_manager_user` (ou laissez par défaut)
    - **Region** : Choisissez la région la plus proche
    - **Plan** : `Free` (pour commencer)
-5. Cliquez sur **"Create Database"**
-6. **Important** : Notez les informations de connexion (Internal Database URL)
+4. Cliquez sur **"Create Database"**
+5. **Important** : Notez les informations de connexion (Internal Database URL)
 
 #### 2. Créer le Service Web
 
@@ -47,15 +46,15 @@ Dans la section **"Environment"** du service web, ajoutez :
 
 ```bash
 SPRING_PROFILES_ACTIVE=production
-DB_URL=jdbc:mysql://[HOST]:[PORT]/article_manager?useSSL=true&serverTimezone=UTC
-DB_USERNAME=gs1user
+DB_URL=jdbc:postgresql://[HOST]:[PORT]/article_manager
+DB_USERNAME=[VOTRE_UTILISATEUR]
 DB_PASSWORD=[VOTRE_MOT_DE_PASSE]
 JWT_SECRET=U73dsIlmL5e6wfYslsop3TsVLPGxYeE9sDOjxxGXTOo=
 JWT_EXPIRATION=86400000
 PORT=10000
 ```
 
-**Note** : Remplacez `[HOST]`, `[PORT]` et `[VOTRE_MOT_DE_PASSE]` par les valeurs de votre base de données Render.
+**Note** : Remplacez `[HOST]`, `[PORT]`, `[VOTRE_UTILISATEUR]` et `[VOTRE_MOT_DE_PASSE]` par les valeurs de votre base de données PostgreSQL Render.
 
 #### 4. Initialiser la Base de Données
 
@@ -82,9 +81,9 @@ Si vous avez un fichier `render.yaml` dans votre repository :
 | Variable | Description | Exemple |
 |----------|-------------|---------|
 | `SPRING_PROFILES_ACTIVE` | Profil Spring à utiliser | `production` |
-| `DB_URL` | URL de connexion MySQL | `jdbc:mysql://...` |
-| `DB_USERNAME` | Nom d'utilisateur MySQL | `gs1user` |
-| `DB_PASSWORD` | Mot de passe MySQL | `votre_mot_de_passe` |
+| `DB_URL` | URL de connexion PostgreSQL | `jdbc:postgresql://...` |
+| `DB_USERNAME` | Nom d'utilisateur PostgreSQL | `article_manager_user` |
+| `DB_PASSWORD` | Mot de passe PostgreSQL | `votre_mot_de_passe` |
 | `JWT_SECRET` | Clé secrète JWT (Base64) | `U73dsIlmL5e6wfY...` |
 | `JWT_EXPIRATION` | Durée de validité du token (ms) | `86400000` |
 | `PORT` | Port d'écoute (Render définit automatiquement) | `10000` |
@@ -99,36 +98,11 @@ openssl rand -base64 32
 
 ### 1. Créer la Base de Données
 
-Exécutez le contenu de `src/main/resources/db/migration/schema.sql` :
+La base de données est créée automatiquement par Render. Exécutez ensuite le contenu de `src/main/resources/db/migration/schema.sql` pour créer les tables :
 
 ```sql
-CREATE DATABASE IF NOT EXISTS article_manager
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE article_manager;
-
-CREATE TABLE IF NOT EXISTS users (
-  id          BIGINT AUTO_INCREMENT PRIMARY KEY,
-  name        VARCHAR(100)        NOT NULL,
-  email       VARCHAR(150)        NOT NULL UNIQUE,
-  password    VARCHAR(255)        NOT NULL,
-  role        ENUM('ROLE_ADMIN','ROLE_MEMBER') NOT NULL DEFAULT 'ROLE_MEMBER',
-  created_at  DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS articles (
-  id            BIGINT AUTO_INCREMENT PRIMARY KEY,
-  title         VARCHAR(200)        NOT NULL,
-  content       TEXT                NOT NULL,
-  author_id     BIGINT              NOT NULL,
-  published_at  DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_article_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_articles_author ON articles(author_id);
-CREATE INDEX idx_articles_title  ON articles(title);
+-- Les tables sont créées automatiquement via le script schema.sql
+-- Utilisez psql ou un client PostgreSQL pour exécuter le script
 ```
 
 ### 2. Insérer les Données de Test

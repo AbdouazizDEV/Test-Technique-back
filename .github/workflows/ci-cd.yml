@@ -12,17 +12,16 @@ jobs:
     runs-on: ubuntu-latest
     
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:15-alpine
         env:
-          MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: article_manager
-          MYSQL_USER: gs1user
-          MYSQL_PASSWORD: gs1password
+          POSTGRES_DB: article_manager
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping -h localhost"
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
@@ -44,16 +43,16 @@ jobs:
           cat > src/main/resources/application.yml << EOF
           spring:
             datasource:
-              url: jdbc:mysql://localhost:3306/article_manager?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-              username: gs1user
-              password: gs1password
-              driver-class-name: com.mysql.cj.jdbc.Driver
+              url: jdbc:postgresql://localhost:5432/article_manager
+              username: postgres
+              password: postgres
+              driver-class-name: org.postgresql.Driver
             jpa:
               hibernate:
                 ddl-auto: validate
               show-sql: false
               properties:
-                hibernate.dialect: org.hibernate.dialect.MySQLDialect
+                hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
             sql:
               init:
                 mode: never
@@ -73,17 +72,17 @@ jobs:
               path: /swagger-ui.html
           EOF
       
-      - name: Wait for MySQL
+      - name: Wait for PostgreSQL
         run: |
-          while ! mysqladmin ping -h localhost -u gs1user -pgs1password --silent; do
-            echo "Waiting for MySQL..."
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
             sleep 2
           done
       
       - name: Initialize database
         run: |
-          mysql -h localhost -u gs1user -pgs1password article_manager < src/main/resources/db/migration/schema.sql || true
-          mysql -h localhost -u gs1user -pgs1password article_manager < src/main/resources/db/migration/seed.sql || true
+          PGPASSWORD=postgres psql -h localhost -U postgres -d article_manager -f src/main/resources/db/migration/schema.sql || true
+          PGPASSWORD=postgres psql -h localhost -U postgres -d article_manager -f src/main/resources/db/migration/seed.sql || true
       
       - name: Build with Maven
         run: mvn clean compile -DskipTests
@@ -91,9 +90,9 @@ jobs:
       - name: Run tests
         run: mvn test
         env:
-          DB_URL: jdbc:mysql://localhost:3306/article_manager?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-          DB_USERNAME: gs1user
-          DB_PASSWORD: gs1password
+          DB_URL: jdbc:postgresql://localhost:5432/article_manager
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
           JWT_SECRET: U73dsIlmL5e6wfYslsop3TsVLPGxYeE9sDOjxxGXTOo=
           JWT_EXPIRATION: 86400000
       

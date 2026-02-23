@@ -25,5 +25,5 @@ services:
 databases:
   - name: article-manager-db
     databaseName: article_manager
-    user: gs1user
+    user: article_manager_user
     plan: starter

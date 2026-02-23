@@ -60,7 +60,7 @@ src/main/java/com/gs1/articlemanager/
 
 - **Java 21** ou supérieur
 - **Maven 3.9+**
-- **MySQL 8.0** ou supérieur
+- **PostgreSQL 15** ou supérieur
 - **Git**
 
 ### Installation avec Docker
@@ -79,10 +79,10 @@ cd "Test Technique B"
 
 ### 2. Créer la base de données
 
-Exécutez le script SQL `src/main/resources/db/migration/schema.sql` dans MySQL :
+Exécutez le script SQL `src/main/resources/db/migration/schema.sql` dans PostgreSQL :
 
 ```bash
-mysql -u root -p < src/main/resources/db/migration/schema.sql
+psql -U postgres -f src/main/resources/db/migration/schema.sql
 ```
 
 ### 3. Configurer l'application
@@ -92,8 +92,8 @@ Modifiez `src/main/resources/application.yml` ou définissez les variables d'env
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/article_manager?useSSL=false&serverTimezone=UTC
-    username: root
+    url: jdbc:postgresql://localhost:5432/article_manager
+    username: postgres
     password: votre_mot_de_passe
 ```
 
@@ -112,7 +112,7 @@ Copiez les hash générés et mettez à jour `seed.sql` avec les vrais hash.
 Exécutez le script `seed.sql` :
 
 ```bash
-mysql -u root -p article_manager < src/main/resources/db/migration/seed.sql
+psql -U postgres -d article_manager -f src/main/resources/db/migration/seed.sql
 ```
 
 ### 6. Lancer l'application
@@ -277,4 +277,4 @@ mvn test
 
 ## 📄 Licence
 
-Ce projet est un projet de démonstration technique.Mon premier projet Spring Boot, je suis fiére de moi 'Maa ko fa am', je suis chaud pour en faire d'autres qui seront beaucoup plus serieux. 
+Ce projet est un projet de démonstration technique.Mon premier projet Spring Boot, je suis fiére de moi 'Maa ko fa am', je suis chaud pour en faire d'autres qui seront beaucoup plus serieux.
