@@ -58,9 +58,9 @@ src/main/java/com/gs1/articlemanager/
 
 ### Installation locale
 
-- **Java 21** ou supérieur
+- **Java 17** ou supérieur
 - **Maven 3.9+**
-- **PostgreSQL 15** ou supérieur
+- **PostgreSQL 13** ou supérieur
 - **Git**
 
 ### Installation avec Docker
@@ -77,12 +77,23 @@ git clone <repository-url>
 cd "Test Technique B"
 ```
 
-### 2. Créer la base de données
+### 2. Créer la base de données PostgreSQL
 
-Exécutez le script SQL `src/main/resources/db/migration/schema.sql` dans PostgreSQL :
+Créez la base de données et exécutez les scripts de migration :
 
 ```bash
-psql -U postgres -f src/main/resources/db/migration/schema.sql
+# Créer la base de données
+sudo -u postgres psql -c "CREATE DATABASE article_manager;"
+
+# Créer les tables
+psql -U postgres -d article_manager -f src/main/resources/db/migration/schema.sql
+```
+
+Ou si vous avez un utilisateur avec les droits :
+
+```bash
+psql -U votre_utilisateur -d postgres -c "CREATE DATABASE article_manager;"
+psql -U votre_utilisateur -d article_manager -f src/main/resources/db/migration/schema.sql
 ```
 
 ### 3. Configurer l'application
@@ -93,8 +104,14 @@ Modifiez `src/main/resources/application.yml` ou définissez les variables d'env
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/article_manager
-    username: postgres
+    username: votre_utilisateur
     password: votre_mot_de_passe
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 ```
 
 ### 4. Générer les hash BCrypt
@@ -147,8 +164,8 @@ docker-compose up --build
 ```
 
 Cette commande va :
-- Créer et démarrer le conteneur MySQL
-- Attendre que MySQL soit prêt (healthcheck)
+- Créer et démarrer le conteneur PostgreSQL
+- Attendre que PostgreSQL soit prêt (healthcheck)
 - Construire et démarrer le backend Spring Boot
 - Initialiser la base de données avec les scripts SQL
 
@@ -158,9 +175,9 @@ L'API sera accessible sur `http://localhost:8080`
 
 | Variable | Description | Valeur par défaut |
 |----------|-------------|-------------------|
-| `DB_URL` | URL de connexion MySQL | `jdbc:mysql://localhost:3306/article_manager?useSSL=false&serverTimezone=UTC` |
-| `DB_USERNAME` | Nom d'utilisateur MySQL | `root` |
-| `DB_PASSWORD` | Mot de passe MySQL | `root` |
+| `DB_URL` | URL de connexion PostgreSQL | `jdbc:postgresql://localhost:5432/article_manager` |
+| `DB_USERNAME` | Nom d'utilisateur PostgreSQL | `postgres` |
+| `DB_PASSWORD` | Mot de passe PostgreSQL | `postgres` |
 | `JWT_SECRET` | Clé secrète JWT (Base64, 256 bits) | (à définir) |
 | `JWT_EXPIRATION` | Durée de validité du token (ms) | `86400000` (24h) |
 
@@ -228,24 +245,24 @@ Après avoir exécuté `seed.sql` avec les vrais hash BCrypt :
 
 | Colonne | Type | Description |
 |---------|------|-------------|
-| `id` | BIGINT | Identifiant unique (AUTO_INCREMENT) |
+| `id` | BIGSERIAL | Identifiant unique (auto-incrémenté) |
 | `name` | VARCHAR(100) | Nom de l'utilisateur |
 | `email` | VARCHAR(150) | Email (UNIQUE) |
 | `password` | VARCHAR(255) | Mot de passe hashé (BCrypt) |
-| `role` | ENUM | ROLE_ADMIN ou ROLE_MEMBER |
-| `created_at` | DATETIME | Date de création |
-| `updated_at` | DATETIME | Date de mise à jour |
+| `role` | VARCHAR(20) | ROLE_ADMIN ou ROLE_MEMBER (CHECK constraint) |
+| `created_at` | TIMESTAMP | Date de création |
+| `updated_at` | TIMESTAMP | Date de mise à jour |
 
 ### Table `articles`
 
 | Colonne | Type | Description |
 |---------|------|-------------|
-| `id` | BIGINT | Identifiant unique (AUTO_INCREMENT) |
+| `id` | BIGSERIAL | Identifiant unique (auto-incrémenté) |
 | `title` | VARCHAR(200) | Titre de l'article |
 | `content` | TEXT | Contenu de l'article |
 | `author_id` | BIGINT | ID de l'auteur (FK vers users.id) |
-| `published_at` | DATETIME | Date de publication |
-| `updated_at` | DATETIME | Date de mise à jour |
+| `published_at` | TIMESTAMP | Date de publication |
+| `updated_at` | TIMESTAMP | Date de mise à jour |
 
 ### Index
 
@@ -274,6 +291,8 @@ mvn test
 1. **Hash BCrypt** : N'oubliez pas de générer les vrais hash avec `PasswordEncoderUtil` avant d'utiliser `seed.sql`
 2. **JWT Secret** : En production, utilisez une clé secrète forte générée aléatoirement (256 bits minimum)
 3. **Base de données** : Le mode `ddl-auto: validate` empêche Hibernate de modifier le schéma. Utilisez les scripts SQL fournis.
+4. **PostgreSQL** : L'application utilise PostgreSQL 13+ avec des types spécifiques (BIGSERIAL, TIMESTAMP, etc.)
+5. **Permissions** : Assurez-vous que l'utilisateur PostgreSQL a les permissions nécessaires sur le schéma `public`
 
 ## 📄 Licence
 

@@ -70,6 +70,15 @@ TEST_ENDPOINTS.md
 test-endpoints.sh
 test-quick.sh
 
+# Scripts SQL temporaires et de développement local
+init-db.sql
+init-schema.sql
+fix-permissions-and-create-tables.sql
+create-db.sh
+schema-local.sql
+INIT_DB.md
+SETUP_LOCAL.md
+
 # Temporary files
 *.tmp
 *.temp
