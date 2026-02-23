@@ -56,35 +56,83 @@ public class ApplicationConfig implements ApplicationListener<ApplicationEnviron
         }
         
         try {
-            // Parser l'URL au format URI: postgresql://user:password@host:port/database
-            java.net.URI uri = new java.net.URI(url);
+            // Parser manuellement l'URL au format: postgresql://user:password@host:port/database
+            // java.net.URI ne parse pas correctement les credentials dans l'authority
             
-            String host = uri.getHost();
-            int port = uri.getPort();
-            String path = uri.getPath();
+            // Enlever le préfixe "postgresql://"
+            String urlWithoutScheme = url;
+            if (url.startsWith("postgresql://")) {
+                urlWithoutScheme = url.substring("postgresql://".length());
+            } else if (url.startsWith("postgres://")) {
+                urlWithoutScheme = url.substring("postgres://".length());
+            }
             
-            // Si le path commence par "/", l'enlever
-            if (path != null && path.startsWith("/")) {
-                path = path.substring(1);
+            // Extraire les credentials et le reste
+            String hostPart;
+            String database;
+            int atIndex = urlWithoutScheme.indexOf('@');
+            
+            if (atIndex > 0) {
+                // Il y a des credentials: user:password@host/database
+                hostPart = urlWithoutScheme.substring(atIndex + 1);
+            } else {
+                // Pas de credentials: host/database
+                hostPart = urlWithoutScheme;
+            }
+            
+            // Extraire host:port et database
+            int slashIndex = hostPart.indexOf('/');
+            if (slashIndex > 0) {
+                database = hostPart.substring(slashIndex + 1);
+                hostPart = hostPart.substring(0, slashIndex);
+            } else {
+                database = "";
+            }
+            
+            // Extraire host et port
+            String host;
+            int port = -1;
+            int colonIndex = hostPart.indexOf(':');
+            if (colonIndex > 0) {
+                host = hostPart.substring(0, colonIndex);
+                try {
+                    port = Integer.parseInt(hostPart.substring(colonIndex + 1));
+                } catch (NumberFormatException e) {
+                    // Le port n'est pas un nombre valide, ignorer
+                    port = -1;
+                }
+            } else {
+                host = hostPart;
             }
             
             // Construire l'URL JDBC sans les credentials (ils sont dans DB_USERNAME/DB_PASSWORD)
             StringBuilder jdbcUrl = new StringBuilder("jdbc:postgresql://");
-            jdbcUrl.append(host != null ? host : "");
+            jdbcUrl.append(host != null && !host.isEmpty() ? host : "localhost");
             
             // Ajouter le port si spécifié, sinon utiliser le port par défaut PostgreSQL (5432)
             if (port > 0) {
                 jdbcUrl.append(":").append(port);
+            } else {
+                jdbcUrl.append(":5432");
             }
             
-            if (path != null && !path.isEmpty()) {
-                jdbcUrl.append("/").append(path);
+            if (database != null && !database.isEmpty()) {
+                jdbcUrl.append("/").append(database);
             }
             
             return jdbcUrl.toString();
         } catch (Exception e) {
             // En cas d'erreur de parsing, essayer simplement d'ajouter "jdbc:" devant
-            return "jdbc:" + url;
+            // et remplacer postgresql:// par postgresql://localhost:5432/
+            String fallback = url;
+            if (fallback.startsWith("postgresql://")) {
+                fallback = fallback.replace("postgresql://", "jdbc:postgresql://");
+            } else if (fallback.startsWith("postgres://")) {
+                fallback = fallback.replace("postgres://", "jdbc:postgresql://");
+            } else if (!fallback.startsWith("jdbc:")) {
+                fallback = "jdbc:" + fallback;
+            }
+            return fallback;
         }
     }
     
