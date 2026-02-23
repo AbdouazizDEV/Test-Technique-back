@@ -59,7 +59,6 @@ public class ApplicationConfig implements ApplicationListener<ApplicationEnviron
             // Parser l'URL au format URI: postgresql://user:password@host:port/database
             java.net.URI uri = new java.net.URI(url);
             
-            String scheme = uri.getScheme(); // "postgresql"
             String host = uri.getHost();
             int port = uri.getPort();
             String path = uri.getPath();
@@ -88,6 +87,7 @@ public class ApplicationConfig implements ApplicationListener<ApplicationEnviron
             return "jdbc:" + url;
         }
     }
+    
     @Bean
     public UserDomainService userDomainService() {
         return new UserDomainService();
