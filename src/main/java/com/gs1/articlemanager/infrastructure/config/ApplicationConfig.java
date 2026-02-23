@@ -11,13 +11,32 @@ import com.gs1.articlemanager.domain.repository.UserRepository;
 import com.gs1.articlemanager.domain.service.ArticleDomainService;
 import com.gs1.articlemanager.domain.service.UserDomainService;
 import com.gs1.articlemanager.infrastructure.security.JwtTokenProvider;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-public class ApplicationConfig {
+public class ApplicationConfig implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
+    
+    @Override
+    public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+        ConfigurableEnvironment env = event.getEnvironment();
+        String dbUrl = env.getProperty("spring.datasource.url");
+        
+        // Normaliser l'URL si elle ne commence pas par "jdbc:"
+        // Render fournit parfois des URLs au format "postgresql://..." sans le préfixe "jdbc:"
+        if (dbUrl != null && !dbUrl.startsWith("jdbc:")) {
+            String normalizedUrl = "jdbc:" + dbUrl;
+            java.util.Map<String, Object> source = new java.util.HashMap<>();
+            source.put("spring.datasource.url", normalizedUrl);
+            env.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", source));
+        }
+    }
     @Bean
     public UserDomainService userDomainService() {
         return new UserDomainService();
