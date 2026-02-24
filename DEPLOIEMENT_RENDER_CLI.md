@@ -1,368 +1,206 @@
 # 🚀 Déploiement avec Render CLI
 
-Ce guide vous explique comment déployer l'application Article Manager API sur Render en utilisant le **Render CLI** (ligne de commande).
+Ce guide vous explique comment déployer l'application Article Manager API sur Render.
 
-## 📋 Prérequis
+## ⚠️ Note importante sur le Render CLI
 
-1. Un compte Render (gratuit sur [render.com](https://render.com))
-2. Un repository GitHub avec le code
-3. Le Render CLI installé sur votre machine
+Le Render CLI officiel peut avoir des problèmes d'installation sur certaines distributions Linux. Nous proposons **3 méthodes alternatives** :
 
-## 🔧 Installation du Render CLI
+## 📋 Méthode 1 : Dashboard Render (Recommandé - Plus Simple)
 
-### Linux / macOS
+### Avantages
+- ✅ Interface graphique intuitive
+- ✅ Pas d'installation requise
+- ✅ Configuration visuelle des variables d'environnement
+- ✅ Logs en temps réel
+
+### Étapes
+
+1. **Connectez-vous** à [Render Dashboard](https://dashboard.render.com)
+
+2. **Créez un Blueprint** :
+   - Cliquez sur **"New +"** → **"Blueprint"**
+   - Connectez votre repository GitHub : `AbdouazizDEV/Test-Technique-back`
+   - Render détectera automatiquement le fichier `render.yaml`
+
+3. **Configurez les variables d'environnement** :
+   - Dans la section "Environment" du service web
+   - Ajoutez les variables suivantes :
+     ```
+     SPRING_PROFILES_ACTIVE=production
+     DB_URL=postgresql://user:password@host/database (URL INTERNE)
+     DB_USERNAME=article_manager_user
+     DB_PASSWORD=votre-mot-de-passe
+     JWT_SECRET=U73dsIlmL5e6wfYslsop3TsVLPGxYeE9sDOjxxGXTOo=
+     JWT_EXPIRATION=86400000
+     PORT=8080
+     ```
+
+4. **Cliquez sur "Apply"** pour déployer
+
+5. **Initialisez la base de données** :
+   - Utilisez le Shell de la base de données dans Render
+   - Exécutez les scripts SQL :
+     ```sql
+     \i src/main/resources/db/migration/schema.sql
+     \i src/main/resources/db/migration/seed.sql
+     ```
+
+## 📋 Méthode 2 : Script de déploiement (Alternative)
+
+Si le Render CLI n'est pas disponible, utilisez le script `deploy-render.sh` :
 
 ```bash
-# Télécharger et installer le Render CLI
+# Définir votre API Key
+export RENDER_API_KEY="rnd_E4PTinLupRovoGcc6ENiQgsgYNKZ"
+
+# Ou créer un fichier .render_api_key
+echo "rnd_E4PTinLupRovoGcc6ENiQgsgYNKZ" > .render_api_key
+export RENDER_API_KEY=$(cat .render_api_key)
+
+# Exécuter le script
+cd backend
+./deploy-render.sh deploy
+```
+
+## 📋 Méthode 3 : Render CLI (Si disponible)
+
+### Installation
+
+Le Render CLI peut être installé de plusieurs façons :
+
+#### Option A : Script d'installation officiel
+
+```bash
 curl -fsSL https://render.com/install.sh | bash
 ```
 
-### Alternative : Installation manuelle
+#### Option B : Téléchargement manuel
 
 ```bash
-# Télécharger la dernière version
-curl -L https://github.com/renderinc/cli/releases/latest/download/render-linux-amd64 -o render
+# Vérifier la dernière version sur GitHub
+# https://github.com/renderinc/cli/releases
 
-# Rendre exécutable
+# Télécharger le binaire pour votre architecture
+curl -L -o render https://github.com/renderinc/cli/releases/download/v[VERSION]/render-linux-amd64
 chmod +x render
 
-# Déplacer dans le PATH (optionnel)
+# Installer dans le PATH (nécessite sudo)
 sudo mv render /usr/local/bin/render
+
+# Ou utiliser localement
+./render --version
 ```
 
-### Vérifier l'installation
+### Authentification
 
 ```bash
-render --version
-```
+# Avec votre API Key
+export RENDER_API_KEY="rnd_E4PTinLupRovoGcc6ENiQgsgYNKZ"
 
-## 🔐 Authentification
-
-### 1. Obtenir votre API Key
-
-1. Connectez-vous à [Render Dashboard](https://dashboard.render.com)
-2. Allez dans **Account Settings** → **API Keys**
-3. Cliquez sur **"Create API Key"**
-4. Copiez la clé (elle ne sera affichée qu'une seule fois !)
-
-### 2. Se connecter avec le CLI
-
-```bash
-# Se connecter avec l'API Key
+# Ou utiliser la commande interactive
 render auth login
-
-# Ou définir la variable d'environnement
-export RENDER_API_KEY="votre-api-key-ici"
 ```
 
-**Alternative** : Créer un fichier `~/.render/api_key` :
+### Déploiement
 
 ```bash
-mkdir -p ~/.render
-echo "votre-api-key-ici" > ~/.render/api_key
-chmod 600 ~/.render/api_key
-```
-
-## 🚀 Déploiement avec render.yaml
-
-### Option 1 : Déploiement automatique (Blueprint)
-
-Le fichier `render.yaml` définit tous les services nécessaires :
-
-```bash
-# Depuis le répertoire backend
 cd backend
 
-# Déployer tous les services définis dans render.yaml
+# Déployer via Blueprint
 render blueprint launch
 
-# Ou spécifier le fichier explicitement
-render blueprint launch --file render.yaml
-```
-
-Cette commande va :
-1. ✅ Créer la base de données PostgreSQL (`article-manager-db`)
-2. ✅ Créer le service web (`article-manager-api`)
-3. ✅ Configurer les variables d'environnement
-4. ✅ Déployer l'application
-
-### Option 2 : Déploiement manuel étape par étape
-
-#### 1. Créer la base de données PostgreSQL
-
-```bash
-render postgres create \
-  --name article-manager-db \
-  --database article_manager \
-  --user article_manager_user \
-  --plan starter \
-  --region frankfurt
-```
-
-**Notez l'URL interne** de la base de données (affichée après la création).
-
-#### 2. Créer le service web
-
-```bash
+# Ou créer les services manuellement
 render services create web \
   --name article-manager-api \
   --repo https://github.com/AbdouazizDEV/Test-Technique-back.git \
   --branch main \
   --root-dir backend \
-  --dockerfile-path ./Dockerfile \
-  --docker-context . \
-  --plan starter \
-  --region frankfurt
+  --dockerfile-path ./Dockerfile
 ```
 
-#### 3. Configurer les variables d'environnement
+## 🔐 Obtenir votre API Key
+
+1. Connectez-vous à [Render Dashboard](https://dashboard.render.com)
+2. Allez dans **Account Settings** → **API Keys**
+3. Cliquez sur **"Create API Key"**
+4. **Copiez la clé immédiatement** (elle ne sera affichée qu'une seule fois !)
+5. Stockez-la de manière sécurisée
+
+## 🚀 Déploiement rapide (Dashboard)
+
+**La méthode la plus simple et recommandée** :
+
+1. ✅ Allez sur https://dashboard.render.com
+2. ✅ Cliquez sur **"New +"** → **"Blueprint"**
+3. ✅ Connectez `AbdouazizDEV/Test-Technique-back`
+4. ✅ Render détectera `render.yaml` automatiquement
+5. ✅ Configurez les variables d'environnement
+6. ✅ Cliquez sur **"Apply"**
+
+C'est tout ! 🎉
+
+## 📝 Configuration des Variables d'Environnement
+
+### Variables Requises
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| `SPRING_PROFILES_ACTIVE` | Profil Spring | `production` |
+| `DB_URL` | URL PostgreSQL (format Render) | `postgresql://user:pass@host/db` |
+| `DB_USERNAME` | Utilisateur PostgreSQL | `article_manager_user` |
+| `DB_PASSWORD` | Mot de passe PostgreSQL | `votre-mot-de-passe` |
+| `JWT_SECRET` | Clé secrète JWT (Base64) | `U73dsIlmL5e6wfY...` |
+| `JWT_EXPIRATION` | Durée validité token (ms) | `86400000` |
+| `PORT` | Port d'écoute | `8080` |
+
+**⚠️ IMPORTANT** :
+- Utilisez l'**URL INTERNE** de la base de données (onglet "Connect" → "Internal")
+- Format Render : `postgresql://user:password@host/database`
+- L'`EnvironmentPostProcessor` normalisera automatiquement l'URL
+
+## ✅ Vérification du Déploiement
 
 ```bash
-# Obtenir l'ID du service (remplacez SERVICE_ID par l'ID réel)
-SERVICE_ID="srv-xxxxx"
-
-# Définir les variables d'environnement
-render env:set \
-  --service-id $SERVICE_ID \
-  SPRING_PROFILES_ACTIVE=production \
-  DB_URL="postgresql://user:password@host/database" \
-  DB_USERNAME="article_manager_user" \
-  DB_PASSWORD="votre-mot-de-passe" \
-  JWT_SECRET="U73dsIlmL5e6wfYslsop3TsVLPGxYeE9sDOjxxGXTOo=" \
-  JWT_EXPIRATION=86400000 \
-  PORT=8080
-```
-
-**⚠️ IMPORTANT** : 
-- Utilisez l'**URL INTERNE** de la base de données (format : `postgresql://user:password@host/database`)
-- L'`EnvironmentPostProcessor` normalisera automatiquement l'URL en format JDBC
-
-#### 4. Lier la base de données au service
-
-```bash
-# Lier la base de données au service web
-render services:link-database \
-  --service-id $SERVICE_ID \
-  --database-id $DB_ID
-```
-
-## 📝 Commandes utiles du Render CLI
-
-### Lister les services
-
-```bash
-# Lister tous les services
-render services list
-
-# Détails d'un service spécifique
-render services show --service-id $SERVICE_ID
-```
-
-### Gérer les variables d'environnement
-
-```bash
-# Lister les variables d'environnement
-render env:list --service-id $SERVICE_ID
-
-# Définir une variable
-render env:set --service-id $SERVICE_ID KEY=value
-
-# Supprimer une variable
-render env:unset --service-id $SERVICE_ID KEY
-```
-
-### Gérer les déploiements
-
-```bash
-# Lister les déploiements
-render deploys list --service-id $SERVICE_ID
-
-# Détails d'un déploiement
-render deploys show --deploy-id $DEPLOY_ID
-
-# Redéployer manuellement
-render deploys create --service-id $SERVICE_ID
-```
-
-### Voir les logs
-
-```bash
-# Logs en temps réel
-render logs tail --service-id $SERVICE_ID
-
-# Logs avec filtres
-render logs tail --service-id $SERVICE_ID --follow
-```
-
-### Gérer les bases de données
-
-```bash
-# Lister les bases de données
-render postgres list
-
-# Détails d'une base de données
-render postgres show --database-id $DB_ID
-
-# Obtenir l'URL de connexion
-render postgres connection-string --database-id $DB_ID
-```
-
-## 🔄 Workflow de déploiement complet
-
-### 1. Préparer l'environnement
-
-```bash
-# Se connecter
-render auth login
-
-# Vérifier la connexion
-render whoami
-```
-
-### 2. Déployer avec render.yaml
-
-```bash
-cd backend
-
-# Déployer tous les services
-render blueprint launch
-
-# Suivre le déploiement
-render logs tail --service article-manager-api
-```
-
-### 3. Initialiser la base de données
-
-Une fois la base de données créée, initialisez les tables :
-
-```bash
-# Obtenir l'URL de connexion
-DB_URL=$(render postgres connection-string --database article-manager-db)
-
-# Se connecter et exécuter les scripts SQL
-psql "$DB_URL" -f src/main/resources/db/migration/schema.sql
-psql "$DB_URL" -f src/main/resources/db/migration/seed.sql
-```
-
-**Alternative** : Utiliser le shell Render
-
-```bash
-# Ouvrir un shell sur la base de données
-render postgres shell --database article-manager-db
-
-# Puis exécuter les scripts SQL
-\i src/main/resources/db/migration/schema.sql
-\i src/main/resources/db/migration/seed.sql
-```
-
-## ✅ Vérification du déploiement
-
-### Vérifier le statut
-
-```bash
-# Statut du service
-render services show --service article-manager-api
-
-# Vérifier les health checks
-curl https://article-manager-api.onrender.com/api-docs
-```
-
-### Tester l'API
-
-```bash
-# Test de l'endpoint de documentation
+# Test de l'API
 curl https://article-manager-api.onrender.com/api-docs
 
-# Test de l'endpoint Swagger
+# Swagger UI
 curl https://article-manager-api.onrender.com/swagger-ui.html
 ```
 
 ## 🔍 Dépannage
 
-### Problème : Authentification échouée
+### Problème : Render CLI non installable
 
-```bash
-# Vérifier la clé API
-echo $RENDER_API_KEY
-
-# Se reconnecter
-render auth login
-```
-
-### Problème : Service ne démarre pas
-
-```bash
-# Voir les logs en temps réel
-render logs tail --service article-manager-api --follow
-
-# Vérifier les variables d'environnement
-render env:list --service article-manager-api
-```
+**Solution** : Utilisez le Dashboard Render (Méthode 1) - c'est la méthode recommandée et la plus simple.
 
 ### Problème : Erreur de connexion à la base de données
 
-```bash
-# Vérifier l'URL de la base de données
-render postgres connection-string --database article-manager-db
+1. Vérifiez que `DB_URL` utilise l'**URL INTERNE**
+2. Vérifiez que le service web et la base de données sont dans la même région
+3. Vérifiez les logs dans le Dashboard Render
 
-# Vérifier que DB_URL utilise l'URL INTERNE
-render env:list --service article-manager-api | grep DB_URL
-```
+### Problème : Service ne démarre pas
 
-## 🔄 Mise à jour de l'application
-
-### Mise à jour automatique
-
-Si vous avez configuré l'auto-deploy sur GitHub :
-
-```bash
-# Pousser les changements
-git push origin main
-
-# Render redéploiera automatiquement
-# Suivre les logs
-render logs tail --service article-manager-api --follow
-```
-
-### Mise à jour manuelle
-
-```bash
-# Redéployer manuellement
-render deploys create --service article-manager-api
-```
-
-## 🗑️ Supprimer les services
-
-```bash
-# Supprimer le service web
-render services delete --service article-manager-api
-
-# Supprimer la base de données
-render postgres delete --database article-manager-db
-
-# Supprimer tous les services d'un blueprint
-render blueprint destroy
-```
+1. Vérifiez les logs dans le Dashboard Render
+2. Vérifiez que toutes les variables d'environnement sont définies
+3. Vérifiez que le Dockerfile est correct
 
 ## 📚 Ressources
 
-- [Documentation Render CLI](https://render.com/docs/cli)
-- [Render CLI GitHub](https://github.com/renderinc/cli)
+- [Documentation Render](https://render.com/docs)
+- [Render Dashboard](https://dashboard.render.com)
 - [Guide render.yaml](https://render.com/docs/blueprint-spec)
 - [Variables d'environnement](https://render.com/docs/environment-variables)
 
-## 🎯 Commandes rapides
+## 🎯 Recommandation
 
-```bash
-# Déploiement complet en une commande
-cd backend && render blueprint launch
+**Pour la plupart des utilisateurs, la Méthode 1 (Dashboard) est la plus simple et la plus fiable.**
 
-# Voir les logs
-render logs tail --service article-manager-api
-
-# Redéployer
-render deploys create --service article-manager-api
-
-# Vérifier le statut
-render services show --service article-manager-api
-```
+Le Dashboard Render offre :
+- ✅ Interface graphique intuitive
+- ✅ Configuration visuelle
+- ✅ Logs en temps réel
+- ✅ Gestion facile des variables d'environnement
+- ✅ Pas d'installation requise
