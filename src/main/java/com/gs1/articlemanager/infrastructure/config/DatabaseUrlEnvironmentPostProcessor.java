@@ -16,26 +16,53 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
     
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        String dbUrl = environment.getProperty("spring.datasource.url");
+        // Vérifier d'abord DATABASE_URL (format Railway/Heroku)
+        String databaseUrl = environment.getProperty("DATABASE_URL");
+        if (databaseUrl != null && !databaseUrl.startsWith("jdbc:")) {
+            Map<String, Object> normalized = normalizePostgresUrl(databaseUrl);
+            if (!normalized.isEmpty()) {
+                environment.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", normalized));
+            }
+            return;
+        }
         
-        // Normaliser l'URL PostgreSQL pour Render
-        // Render fournit: postgresql://user:password@host/database
+        // Sinon, vérifier spring.datasource.url ou DB_URL
+        String dbUrl = environment.getProperty("spring.datasource.url");
+        if (dbUrl == null) {
+            dbUrl = environment.getProperty("DB_URL");
+        }
+        
+        // Normaliser l'URL PostgreSQL pour Render/Railway
+        // Format fourni: postgresql://user:password@host:port/database
         // JDBC attend: jdbc:postgresql://host:port/database (avec credentials séparés)
         if (dbUrl != null && !dbUrl.startsWith("jdbc:")) {
-            String normalizedUrl = normalizePostgresUrl(dbUrl);
-            Map<String, Object> source = new HashMap<>();
-            source.put("spring.datasource.url", normalizedUrl);
-            environment.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", source));
+            Map<String, Object> normalized = normalizePostgresUrl(dbUrl);
+            if (!normalized.isEmpty()) {
+                environment.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", normalized));
+            }
         }
     }
     
     /**
-     * Normalise une URL PostgreSQL au format Render vers le format JDBC
-     * Input: postgresql://user:password@host/database
-     * Output: jdbc:postgresql://host:port/database
-     * Les credentials sont gérés séparément via DB_USERNAME et DB_PASSWORD
+     * Normalise une URL PostgreSQL au format Render/Railway vers le format JDBC
+     * Input: postgresql://user:password@host:port/database
+     * Output: Map contenant:
+     *   - spring.datasource.url: jdbc:postgresql://host:port/database
+     *   - spring.datasource.username: user (si présent)
+     *   - spring.datasource.password: password (si présent)
      */
-    private String normalizePostgresUrl(String url) {
+    private Map<String, Object> normalizePostgresUrl(String url) {
+        Map<String, Object> properties = new HashMap<>();
+        
+        if (url == null || url.isEmpty()) {
+            return properties;
+        }
+        
+        // Si déjà au format JDBC, retourner tel quel
+        if (url.startsWith("jdbc:")) {
+            properties.put("spring.datasource.url", url);
+            return properties;
+        }
         if (url == null || url.isEmpty()) {
             return url;
         }
@@ -74,8 +101,6 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             if (slashIndex > 0) {
                 database = hostPart.substring(slashIndex + 1);
                 hostPart = hostPart.substring(0, slashIndex);
-            } else {
-                database = "";
             }
             
             // Extraire host et port
@@ -94,7 +119,7 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 host = hostPart;
             }
             
-            // Construire l'URL JDBC sans les credentials (ils sont dans DB_USERNAME/DB_PASSWORD)
+            // Construire l'URL JDBC sans les credentials (ils seront définis séparément)
             StringBuilder jdbcUrl = new StringBuilder("jdbc:postgresql://");
             jdbcUrl.append(host != null && !host.isEmpty() ? host : "localhost");
             
@@ -109,10 +134,23 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 jdbcUrl.append("/").append(database);
             }
             
-            return jdbcUrl.toString();
+            properties.put("spring.datasource.url", jdbcUrl.toString());
+            
+            // Extraire username et password des userInfo si présents
+            if (userInfo != null && !userInfo.isEmpty()) {
+                int userPassSeparator = userInfo.indexOf(':');
+                if (userPassSeparator > 0) {
+                    properties.put("spring.datasource.username", userInfo.substring(0, userPassSeparator));
+                    properties.put("spring.datasource.password", userInfo.substring(userPassSeparator + 1));
+                } else {
+                    properties.put("spring.datasource.username", userInfo);
+                }
+            }
+            
+            return properties;
         } catch (Exception e) {
-            // En cas d'erreur de parsing, essayer simplement d'ajouter "jdbc:" devant
-            // mais cela ne résoudra pas le problème des credentials
+            // En cas d'erreur de parsing, logguer et retourner l'URL originale avec jdbc:
+            System.err.println("Error parsing PostgreSQL URL: " + url + " - " + e.getMessage());
             String fallback = url;
             if (fallback.startsWith("postgresql://")) {
                 fallback = fallback.replace("postgresql://", "jdbc:postgresql://");
@@ -121,7 +159,8 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             } else if (!fallback.startsWith("jdbc:")) {
                 fallback = "jdbc:" + fallback;
             }
-            return fallback;
+            properties.put("spring.datasource.url", fallback);
+            return properties;
         }
     }
 }
