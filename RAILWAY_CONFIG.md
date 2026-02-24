@@ -78,6 +78,34 @@ curl https://your-app.up.railway.app/swagger-ui.html
 
 **⚠️ Important** : Railway utilise **HTTPS** par défaut. Si vous utilisez `http://`, cela ne fonctionnera pas.
 
+### Erreur : CORS (Failed to fetch)
+
+**Symptômes** :
+- `Failed to fetch` dans Swagger UI
+- Erreur CORS dans la console du navigateur
+- Les requêtes depuis Swagger UI échouent
+
+**Solutions** :
+
+1. **Utilisez HTTPS, pas HTTP** :
+   - ❌ `http://test-technique-back-production.up.railway.app/api/auth/register`
+   - ✅ `https://test-technique-back-production.up.railway.app/api/auth/register`
+   - Swagger UI devrait automatiquement utiliser HTTPS, mais vérifiez l'URL dans la barre d'adresse
+
+2. **Configuration CORS** :
+   - ✅ **Déjà configurée** : La configuration CORS autorise toutes les origines en production
+   - Les requêtes depuis Swagger UI (même domaine) sont autorisées
+   - Les requêtes depuis d'autres domaines sont également autorisées
+
+3. **Vérifiez que l'application est redéployée** :
+   - Après la mise à jour de la configuration CORS, Railway redéploie automatiquement
+   - Attendez que le déploiement soit terminé avant de tester
+
+4. **Si le problème persiste** :
+   - Videz le cache du navigateur
+   - Essayez en navigation privée
+   - Vérifiez les logs Railway pour d'autres erreurs
+
 ## 🐛 Dépannage
 
 ### Erreur : URL ne fonctionne pas (404, connexion refusée, erreur SSL)
