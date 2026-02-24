@@ -86,7 +86,6 @@ jobs:
       
       - name: Build with Maven
         run: mvn clean compile -DskipTests
-        working-directory: ./backend
       
       - name: Run tests
         run: mvn test

@@ -1,6 +1,7 @@
 services:
   - type: web
     name: article-manager-api
+    runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
