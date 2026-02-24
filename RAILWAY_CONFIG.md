@@ -45,6 +45,11 @@ Railway détectera automatiquement :
 - ✅ Activez **"Public Networking"**
 - Railway générera une URL publique automatiquement (ex: `https://your-app.up.railway.app`)
 
+**⚠️ Important** : 
+- Ne pas utiliser `interchange.proxy.rlwy.net` (proxy interne, erreur SSL normale)
+- Utilisez l'URL publique générée par Railway (format `*.up.railway.app`)
+- L'URL publique est visible dans Settings → Networking après activation
+
 ### 6. ⚙️ Deploy Settings
 
 **Settings → Deploy** :
@@ -75,20 +80,22 @@ curl https://your-app.up.railway.app/swagger-ui.html
 
 ## 🐛 Dépannage
 
-### Erreur : URL ne fonctionne pas (404, connexion refusée)
+### Erreur : URL ne fonctionne pas (404, connexion refusée, erreur SSL)
 
 **Solutions** :
-1. **Utilisez HTTPS, pas HTTP** :
-   - ❌ `http://interchange.proxy.rlwy.net/api-docs`
-   - ✅ `https://interchange.proxy.rlwy.net/api-docs`
+1. **N'utilisez PAS `interchange.proxy.rlwy.net`** :
+   - ❌ `https://interchange.proxy.rlwy.net/api-docs` (proxy interne, erreur SSL normale)
+   - ✅ Utilisez l'URL publique Railway (format `*.up.railway.app`)
 
-2. **Vérifiez que le service Spring Boot est déployé** :
+2. **Trouvez l'URL publique** :
+   - Service Spring Boot → Settings → Networking
+   - Activez "Public Networking" si ce n'est pas fait
+   - Railway générera une URL publique (ex: `https://test-technique-back-production-xxxx.up.railway.app`)
+   - Utilisez cette URL pour accéder à l'API
+
+3. **Vérifiez que le service Spring Boot est déployé** :
    - Service doit être ACTIF (pas offline)
    - Vérifiez l'onglet "Deployments"
-
-3. **Vérifiez le Networking** :
-   - Settings → Networking → "Public Networking" doit être ACTIVÉ
-   - Railway génère une URL publique uniquement si activé
 
 4. **Vérifiez les logs du service** :
    - Onglet "Deployments" → Dernier déploiement → "View logs"
