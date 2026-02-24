@@ -1,9 +1,9 @@
 package com.gs1.articlemanager.infrastructure.config;
 
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,7 +17,7 @@ import java.util.Arrays;
  * Initialise les données de test (seeders) au démarrage de l'application en production
  */
 @Component
-public class DataInitializer {
+public class DataInitializer implements CommandLineRunner {
     
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
     
@@ -32,8 +32,12 @@ public class DataInitializer {
         this.environment = environment;
     }
     
-    @PostConstruct
-    public void initializeData() {
+    /**
+     * S'exécute après que l'application soit complètement démarrée
+     * Cela garantit que les tables sont créées par Hibernate avant d'exécuter les seeders
+     */
+    @Override
+    public void run(String... args) {
         // Vérifier si on est en production
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("production");
         
@@ -67,7 +71,21 @@ public class DataInitializer {
             try {
                 populator.execute(dataSource);
                 logger.info("✅ Script de seed exécuté avec succès");
+                
+                // Vérifier que les données ont bien été insérées
+                Integer finalAdminCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM users WHERE email = 'admin@gs1sn.com'",
+                    Integer.class
+                );
+                
+                if (finalAdminCount != null && finalAdminCount > 0) {
+                    logger.info("✅ Vérification réussie : Admin créé avec succès");
+                } else {
+                    logger.warn("⚠️ Attention : L'admin n'a pas été créé. Vérifiez les logs ci-dessus.");
+                }
             } catch (Exception e) {
+                // Logger l'erreur complète pour le débogage
+                logger.error("❌ Erreur lors de l'exécution du script de seed: {}", e.getMessage(), e);
                 // Les erreurs de contrainte sont normales (ON CONFLICT DO NOTHING)
                 logger.debug("Note: Certaines insertions peuvent avoir été ignorées (ON CONFLICT DO NOTHING)");
             }
