@@ -10,7 +10,18 @@ Ce guide vous explique comment déployer l'application Article Manager API sur R
 
 ## 🚀 Déploiement
 
-### Option 1 : Déploiement via Render Dashboard (Recommandé)
+### Option 0 : Déploiement via Render CLI (Recommandé pour automatisation)
+
+Voir le guide complet : **[DEPLOIEMENT_RENDER_CLI.md](./DEPLOIEMENT_RENDER_CLI.md)**
+
+**Installation rapide** :
+```bash
+curl -fsSL https://render.com/install.sh | bash
+render auth login
+cd backend && render blueprint launch
+```
+
+### Option 1 : Déploiement via Render Dashboard
 
 #### 1. Créer une Base de Données PostgreSQL
 
