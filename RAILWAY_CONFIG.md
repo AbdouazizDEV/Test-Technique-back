@@ -66,11 +66,33 @@ Railway détectera automatiquement :
 
 Une fois déployé, testez :
 ```bash
+# Utilisez HTTPS, pas HTTP
 curl https://your-app.up.railway.app/api-docs
 curl https://your-app.up.railway.app/swagger-ui.html
 ```
 
+**⚠️ Important** : Railway utilise **HTTPS** par défaut. Si vous utilisez `http://`, cela ne fonctionnera pas.
+
 ## 🐛 Dépannage
+
+### Erreur : URL ne fonctionne pas (404, connexion refusée)
+
+**Solutions** :
+1. **Utilisez HTTPS, pas HTTP** :
+   - ❌ `http://interchange.proxy.rlwy.net/api-docs`
+   - ✅ `https://interchange.proxy.rlwy.net/api-docs`
+
+2. **Vérifiez que le service Spring Boot est déployé** :
+   - Service doit être ACTIF (pas offline)
+   - Vérifiez l'onglet "Deployments"
+
+3. **Vérifiez le Networking** :
+   - Settings → Networking → "Public Networking" doit être ACTIVÉ
+   - Railway génère une URL publique uniquement si activé
+
+4. **Vérifiez les logs du service** :
+   - Onglet "Deployments" → Dernier déploiement → "View logs"
+   - Cherchez les erreurs de démarrage
 
 ### Erreur : Build échoue
 
@@ -78,13 +100,15 @@ curl https://your-app.up.railway.app/swagger-ui.html
 1. Vérifiez les logs de build
 2. Assurez-vous que le Dockerfile est à la racine
 3. Vérifiez que `railway.json` est correct
+4. Assurez-vous que Railway utilise Docker, pas Maven
 
 ### Erreur : Connexion à la base de données
 
 **Solution** :
-1. Vérifiez que PostgreSQL est bien créé
-2. Vérifiez que `DATABASE_URL` est bien défini (automatique)
-3. Vérifiez les logs de l'application
+1. Vérifiez que PostgreSQL est bien créé et ACTIF
+2. Vérifiez que `DATABASE_URL` est bien défini dans les variables du service Spring Boot
+3. Vérifiez les logs de l'application pour les erreurs de connexion
+4. Assurez-vous que les deux services sont dans le même projet Railway
 
 ### Erreur : Port non trouvé
 
