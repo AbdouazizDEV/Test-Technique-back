@@ -63,14 +63,6 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             properties.put("spring.datasource.url", url);
             return properties;
         }
-        if (url == null || url.isEmpty()) {
-            return url;
-        }
-        
-        // Si déjà au format JDBC, retourner tel quel
-        if (url.startsWith("jdbc:")) {
-            return url;
-        }
         
         try {
             // Parser manuellement l'URL au format: postgresql://user:password@host:port/database
@@ -84,12 +76,14 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             }
             
             // Extraire les credentials et le reste
+            String userInfo = null;
             String hostPart;
-            String database;
+            String database = "";
             int atIndex = urlWithoutScheme.indexOf('@');
             
             if (atIndex > 0) {
                 // Il y a des credentials: user:password@host/database
+                userInfo = urlWithoutScheme.substring(0, atIndex);
                 hostPart = urlWithoutScheme.substring(atIndex + 1);
             } else {
                 // Pas de credentials: host/database
@@ -101,6 +95,8 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             if (slashIndex > 0) {
                 database = hostPart.substring(slashIndex + 1);
                 hostPart = hostPart.substring(0, slashIndex);
+            } else {
+                database = "";
             }
             
             // Extraire host et port
