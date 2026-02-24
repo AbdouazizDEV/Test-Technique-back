@@ -158,7 +158,14 @@ curl https://your-app.up.railway.app/swagger-ui.html
      - Puis exécutez `seed-railway.sql` pour insérer les données de test
    - Remettez `ddl-auto: validate` dans `application-production.yml`
 
-**Note** : Avec `ddl-auto: update`, les tables seront créées automatiquement. Pour insérer les données de test, exécutez `seed-railway.sql` manuellement dans Railway.
+**Note** : 
+- ✅ Avec `ddl-auto: update`, les tables seront créées automatiquement
+- ✅ Les données de test (seeders) sont **automatiquement exécutées** au démarrage via `DataInitializer`
+- ✅ Les comptes de test seront créés automatiquement :
+  - **Admin** : `admin@gs1sn.com` / `Admin@2025`
+  - **Membre** : `mamadou@gs1sn.com` / `password123`
+  - **Membre** : `fatou@gs1sn.com` / `password123`
+- ✅ Si les données existent déjà, les seeders ne seront pas réexécutés (évite les doublons)
 
 ### Erreur : Connexion à la base de données (Connection refused)
 
