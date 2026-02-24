@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${spring.datasource.url:${DB_URL:${DATABASE_URL}}}
-    username: ${spring.datasource.username:${DB_USERNAME}}
-    password: ${spring.datasource.password:${DB_PASSWORD}}
+    url: ${spring.datasource.url:jdbc:postgresql://localhost:5432/article_manager}
+    username: ${spring.datasource.username:postgres}
+    password: ${spring.datasource.password:}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
