@@ -26,16 +26,9 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             return;
         }
         
-        // Sinon, vérifier spring.datasource.url ou DB_URL
-        String dbUrl = environment.getProperty("spring.datasource.url");
-        if (dbUrl == null) {
-            dbUrl = environment.getProperty("DB_URL");
-        }
-        
-        // Normaliser l'URL PostgreSQL pour Render/Railway
-        // Format fourni: postgresql://user:password@host:port/database
-        // JDBC attend: jdbc:postgresql://host:port/database (avec credentials séparés)
-        if (dbUrl != null && !dbUrl.startsWith("jdbc:")) {
+        // Sinon, vérifier DB_URL (format Render)
+        String dbUrl = environment.getProperty("DB_URL");
+        if (dbUrl != null && !dbUrl.isEmpty() && !dbUrl.startsWith("jdbc:")) {
             Map<String, Object> normalized = normalizePostgresUrl(dbUrl);
             if (!normalized.isEmpty()) {
                 environment.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", normalized));
