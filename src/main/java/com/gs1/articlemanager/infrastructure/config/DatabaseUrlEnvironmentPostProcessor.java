@@ -19,8 +19,14 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         // Vérifier d'abord DATABASE_URL (format Railway/Heroku)
         String databaseUrl = environment.getProperty("DATABASE_URL");
         if (databaseUrl != null && !databaseUrl.startsWith("jdbc:")) {
+            System.out.println("[DatabaseUrlEnvironmentPostProcessor] DATABASE_URL détecté: " + 
+                (databaseUrl.length() > 50 ? databaseUrl.substring(0, 50) + "..." : databaseUrl));
             Map<String, Object> normalized = normalizePostgresUrl(databaseUrl);
             if (!normalized.isEmpty()) {
+                System.out.println("[DatabaseUrlEnvironmentPostProcessor] URL normalisée: " + normalized.get("spring.datasource.url"));
+                System.out.println("[DatabaseUrlEnvironmentPostProcessor] Username: " + normalized.get("spring.datasource.username"));
+                System.out.println("[DatabaseUrlEnvironmentPostProcessor] Password: " + 
+                    (normalized.get("spring.datasource.password") != null ? "***" : "null"));
                 environment.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", normalized));
             }
             return;
@@ -29,10 +35,20 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         // Sinon, vérifier DB_URL (format Render)
         String dbUrl = environment.getProperty("DB_URL");
         if (dbUrl != null && !dbUrl.isEmpty() && !dbUrl.startsWith("jdbc:")) {
+            System.out.println("[DatabaseUrlEnvironmentPostProcessor] DB_URL détecté: " + 
+                (dbUrl.length() > 50 ? dbUrl.substring(0, 50) + "..." : dbUrl));
             Map<String, Object> normalized = normalizePostgresUrl(dbUrl);
             if (!normalized.isEmpty()) {
+                System.out.println("[DatabaseUrlEnvironmentPostProcessor] URL normalisée: " + normalized.get("spring.datasource.url"));
+                System.out.println("[DatabaseUrlEnvironmentPostProcessor] Username: " + normalized.get("spring.datasource.username"));
+                System.out.println("[DatabaseUrlEnvironmentPostProcessor] Password: " + 
+                    (normalized.get("spring.datasource.password") != null ? "***" : "null"));
                 environment.getPropertySources().addFirst(new MapPropertySource("normalizedDbUrl", normalized));
             }
+        } else {
+            System.out.println("[DatabaseUrlEnvironmentPostProcessor] Aucune variable DATABASE_URL ou DB_URL trouvée");
+            System.out.println("[DatabaseUrlEnvironmentPostProcessor] DATABASE_URL=" + databaseUrl);
+            System.out.println("[DatabaseUrlEnvironmentPostProcessor] DB_URL=" + dbUrl);
         }
     }
     
@@ -83,10 +99,17 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 hostPart = urlWithoutScheme;
             }
             
-            // Extraire host:port et database
+            // Extraire host:port et database (gérer les paramètres de requête comme ?sslmode=require)
             int slashIndex = hostPart.indexOf('/');
             if (slashIndex > 0) {
-                database = hostPart.substring(slashIndex + 1);
+                String dbPart = hostPart.substring(slashIndex + 1);
+                // Enlever les paramètres de requête de la base de données
+                int queryIndex = dbPart.indexOf('?');
+                if (queryIndex > 0) {
+                    database = dbPart.substring(0, queryIndex);
+                } else {
+                    database = dbPart;
+                }
                 hostPart = hostPart.substring(0, slashIndex);
             } else {
                 database = "";
