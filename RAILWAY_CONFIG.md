@@ -109,6 +109,29 @@ curl https://your-app.up.railway.app/swagger-ui.html
 3. Vérifiez que `railway.json` est correct
 4. Assurez-vous que Railway utilise Docker, pas Maven
 
+### Erreur : Schema-validation: missing table [articles]
+
+**Symptômes** :
+- `Schema-validation: missing table [articles]`
+- `Schema-validation: missing table [users]`
+- Application crash au démarrage après connexion réussie à PostgreSQL
+
+**Solution** :
+1. **Option rapide (déjà appliquée)** :
+   - `ddl-auto` est maintenant à `update` dans `application-production.yml`
+   - Hibernate créera automatiquement les tables au démarrage
+   - ✅ **Déjà configuré** - Les tables seront créées au prochain redéploiement
+
+2. **Option manuelle (alternative)** :
+   - Si vous préférez créer les tables manuellement :
+     - Railway → Service PostgreSQL → Onglet **Data** → **Query**
+     - Copiez le contenu de `src/main/resources/db/migration/schema-railway.sql`
+     - Collez et exécutez dans l'éditeur SQL
+     - Puis exécutez `seed-railway.sql` pour insérer les données de test
+   - Remettez `ddl-auto: validate` dans `application-production.yml`
+
+**Note** : Avec `ddl-auto: update`, les tables seront créées automatiquement. Pour insérer les données de test, exécutez `seed-railway.sql` manuellement dans Railway.
+
 ### Erreur : Connexion à la base de données (Connection refused)
 
 **Symptômes** :
