@@ -109,13 +109,47 @@ curl https://your-app.up.railway.app/swagger-ui.html
 3. Vérifiez que `railway.json` est correct
 4. Assurez-vous que Railway utilise Docker, pas Maven
 
-### Erreur : Connexion à la base de données
+### Erreur : Connexion à la base de données (Connection refused)
 
-**Solution** :
-1. Vérifiez que PostgreSQL est bien créé et ACTIF
-2. Vérifiez que `DATABASE_URL` est bien défini dans les variables du service Spring Boot
-3. Vérifiez les logs de l'application pour les erreurs de connexion
-4. Assurez-vous que les deux services sont dans le même projet Railway
+**Symptômes** :
+- `java.net.ConnectException: Connection refused`
+- `FATAL: password authentication failed`
+- Application crash au démarrage
+
+**Solutions** :
+
+1. **Vérifiez que PostgreSQL est ACTIF** :
+   - Dans Railway, vérifiez que le service PostgreSQL est **ACTIF** (pas offline)
+   - Si offline, redémarrez-le ou recréez-le
+
+2. **Vérifiez que `DATABASE_URL` est présent** :
+   - Service Spring Boot → Onglet **Variables**
+   - `DATABASE_URL` doit être présent (Railway l'ajoute automatiquement si PostgreSQL est dans le même projet)
+   - Si absent :
+     - Allez dans le service PostgreSQL → Onglet **Variables**
+     - Copiez la valeur de `DATABASE_URL`
+     - Collez-la dans les variables du service Spring Boot
+
+3. **Vérifiez que les services sont dans le même projet** :
+   - Les deux services (Spring Boot + PostgreSQL) doivent être dans le **même projet Railway**
+   - Si PostgreSQL est dans un autre projet, copiez manuellement `DATABASE_URL`
+
+4. **Vérifiez les logs de débogage** :
+   - Les logs affichent maintenant :
+     - `[DatabaseUrlEnvironmentPostProcessor] DATABASE_URL détecté: ...`
+     - `[DatabaseUrlEnvironmentPostProcessor] URL normalisée: ...`
+     - `[DatabaseUrlEnvironmentPostProcessor] Username: ...`
+   - Vérifiez que l'URL normalisée est correcte (format: `jdbc:postgresql://host:port/database`)
+   - Vérifiez que le host et le port sont corrects
+
+5. **Vérifiez le format de l'URL** :
+   - Railway fournit `DATABASE_URL` au format : `postgresql://user:password@host:port/database`
+   - L'application le convertit automatiquement en format JDBC
+   - Si vous voyez une erreur de parsing dans les logs, vérifiez le format
+
+6. **Redémarrez le service Spring Boot** :
+   - Après avoir ajouté/modifié `DATABASE_URL`, redémarrez le service
+   - Railway → Service Spring Boot → Menu (⋮) → Restart
 
 ### Erreur : Port non trouvé
 
